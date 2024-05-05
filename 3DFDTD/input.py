@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.constants as constants
 from collections import namedtuple
-from fundamentals import *
+from modules.fundamentals import *
 
 "Adjustable parameters"
 ddx = 10 * nm  # args.v[0]*nm           # spatial step size

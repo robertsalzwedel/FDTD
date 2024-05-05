@@ -1,6 +1,6 @@
-from fundamentals import Dimensions
+from modules.fundamentals import Dimensions
 import numpy as np
-from classes import Field
+from modules.classes import Field
 
 dim = 3
 dims = Dimensions(x=dim, y=dim, z=dim)

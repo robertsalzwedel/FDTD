@@ -24,15 +24,17 @@ import json
 import os  # for making directory
 
 # Robert imports
-from fundamentals import *
+from modules.fundamentals import *
 from input import *
-from parameters import *
-import fdtd, pml, object
-import monitors as mnt
+from modules.parameters import *
+import modules.fdtd as fdtd
+import modules.pml as pml
+import modules.object as object
+import modules.monitors as mnt
 import data
 import plotfile as plots
-from classes import DFT, Pulse, DFT_Field_3D, DFT_Field_2D, Field
-from fields import *
+from modules.classes import DFT, Pulse, DFT_Field_3D, DFT_Field_2D, Field
+from modules.fields import *
 
 # package for the comparison to the Mie solution case for spherical particle
 import miepython
