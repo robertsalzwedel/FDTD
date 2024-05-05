@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.constants as constants
 from collections import namedtuple
-from fundamentals import *
+from modules.fundamentals import *
 
 "Adjustable parameters"
 ddx = 10 * nm  # args.v[0]*nm           # spatial step size
@@ -9,7 +9,7 @@ dt = ddx / c * Sc  # time step, from dx fulfilling stability criteria
 radius = 150 * nm  # radius of sphere
 tfsf_dist = 12  # args.v[4]           # TFSF distance from computational boundary
 npml = 8  # number of PML layers
-dim = 60  # args.v[1]                 # number of spatial steps
+dim = 50  # args.v[1]                 # number of spatial steps
 
 "Time parameters"
 tsteps = 5000  # args.v[2]             # number of time steps
@@ -33,7 +33,7 @@ FLAG = FLAGS(
     TFSF=1,  # Plane wave                0: off,         1: TFSF on,             2: Periodic Boundary condition
     POINT=0,  # Point source              0: off,         1: on
     # monitors
-    CROSS=1,  # x sections (scat, abs)    0: off,         1: on
+    CROSS=0,  # x sections (scat, abs)    0: off,         1: on
     DFT3D=0,  # 3D DFT monitor:           0: off,         1: on
     DFT2D=0,  # 2D DFT monitor            0: off,         1: on
     FFT=0,  # FFT point monitor         0: off,         1: on

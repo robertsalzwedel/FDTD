@@ -24,15 +24,17 @@ import json
 import os  # for making directory
 
 # Robert imports
-from fundamentals import *
+from modules.fundamentals import *
 from input import *
-from parameters import *
-import fdtd, pml, object
-import monitors as mnt
+from modules.parameters import *
+import modules.fdtd as fdtd
+import modules.pml as pml
+import modules.object as object
+import modules.monitors as mnt
 import data
 import plotfile as plots
-from classes import DFT, Pulse, DFT_Field_3D, DFT_Field_2D, Field
-from fields import *
+from modules.classes import DFT, Pulse, DFT_Field_3D, DFT_Field_2D, Field
+from modules.fields import *
 
 # package for the comparison to the Mie solution case for spherical particle
 import miepython
@@ -389,12 +391,12 @@ else:
 # #General setting
 if FLAG.ANIMATION == 1:
     # plt.rcParams.update({'font.size': 14})
-    # fig, ax = plt.subplots(3, 4, figsize=(20, 15))
-    # ims, imp, text_tstep, xcut, ycut, zcut, incident_e, incident_h =\
-    #      plots.setup(FLAG, fig, ax, ddx, dt, length, array, dims, sphere, pulse, npml, tfsf,e, ez_inc, hx_inc)
+    # # fig, ax = plt.subplots(3, 4, figsize=(20, 15))
+    # # ims, imp, text_tstep, xcut, ycut, zcut, incident_e, incident_h =\
+    # #      plots.setup(FLAG, fig, ax, ddx, dt, length, array, dims, sphere, pulse, npml, tfsf,e, ez_inc, hx_inc)
     # fig, ax = plt.subplots(3, 3, figsize=(20, 15))
-    #    ims, imp, text_tstep, incident_loc,plot_f,plot_f2,plot_f3 =\
-    #     plots.setup_GIF(FLAG, fig, ax, ddx, dt, length, array, dims, sphere, pulse, npml, tfsf,e, ez_inc, hx_inc,f_plot)
+    # ims, imp, text_tstep, incident_loc,plot_f,plot_f2,plot_f3 =\
+    #      plots.setup_GIF(FLAG, fig, ax, ddx, dt, length, array, dims, sphere, pulse, npml, tfsf,e, ez_inc, hx_inc,f_plot)
 
     plt.rcParams.update({"font.size": 12})
     fig, ax = plt.subplots(3, 4, figsize=(20, 15))
@@ -427,7 +429,6 @@ print("Time for setting up the problem", intermediate_time - start_time)
 ###################################
 
 for time_step in range(1, tsteps + 1):
-    print(time_step)
 
     "break statement for auto shutoff, in case that needed"
     # if(time_step > t0 and np.max(ez[npml:Xmax-npml,npml:Ymax-npml,npml:Zmax-npml])<1e-5):
@@ -437,7 +438,7 @@ for time_step in range(1, tsteps + 1):
     # -------------------------------------------------------------------
 
     # Compute macroscopic polarization using auxilliary equation"
-    if FLAG.OBJECT != 0:
+    if FLAG.OBJECT != 0 and FLAG.MICRO == 0:
         if FLAG.MATERIAL == 1:  # Drude only
             p_drude, p_tmp_drude = object.calculate_polarization(
                 dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, FLAG.OBJECT
@@ -669,27 +670,9 @@ for time_step in range(1, tsteps + 1):
             time_step,
         )
 
-    # # # Animation
+    # # Animation
     # if time_step % cycle == 0 and FLAG.ANIMATION == 1:
-    #     plots.animate(
-    #         time_step,
-    #         text_tstep,
-    #         e,
-    #         dims,
-    #         ims,
-    #         array,
-    #         ax,
-    #         xcut,
-    #         ycut,
-    #         zcut,
-    #         incident_e,
-    #         ez_inc,
-    #         hx_inc,
-    #         incident_h,
-    #         p,
-    #         imp,
-    #         time_pause,
-    #     )
+    #     # plots.animate(time_step,text_tstep,e,dims,ims,array,ax,xcut,ycut,zcut,incident_e,ez_inc,hx_inc,incident_h,p,imp,time_pause)
     #     plots.animate_GIF(
     #         time_step,
     #         text_tstep,

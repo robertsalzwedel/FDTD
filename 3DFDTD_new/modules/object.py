@@ -2,6 +2,7 @@ from pyexpat import EXPAT_VERSION
 import numpy as np
 import numba
 from scipy.constants import nano as nm
+from modules.fundamentals import param_drude, param_drudelorentz, param_etch
 
 # import warnings
 # import solve
@@ -214,7 +215,23 @@ def update_polarization_point(i, j, k, p, p_tmp, e, f1, f2, f3):
 
 
 @numba.jit(nopython=True)
-def create_rectangle_PBC(dims, y_low, y_high, dt, eps_in, wp, gamma, ga, d1, d2, d3):
+def create_rectangle_drude_PBC(constants, args, dims, y_low, y_high, ga, d1, d2, d3):
+
+    ddx = constants["ddx"]
+    dt = constants["dt"]
+    nsub = args.nsub
+    eps_out = args.eps_out
+
+    if args.material == "Drude":
+        eps_in = param_drude["eps_in"]
+        wp = param_drude["wp"]
+        gamma = param_drude["gamma"]
+
+    if args.material == "DrudeLorentz":
+        eps_in = param_drudelorentz["eps_in"]
+        wp = param_drudelorentz["wp"]
+        gamma = param_drudelorentz["gamma"]
+
     for jj in range(y_low, y_high):
         for ii in range(0, dims.x):
             for kk in range(0, dims.z):
@@ -593,16 +610,9 @@ def create_sphere_drude(sphere, nsub, ddx, dt, wp, gamma, d1, d2, d3):
 
 
 def create_sphere_etch(
+    constants,
+    args,
     sphere,
-    nsub,
-    ddx,
-    dt,
-    c1,
-    c2,
-    w1,
-    w2,
-    gamma1,
-    gamma2,
     f1_et1,
     f2_et1,
     f3_et1,
@@ -612,6 +622,18 @@ def create_sphere_etch(
     f3_et2,
     f4_et2,
 ):
+
+    ddx = constants["ddx"]
+    dt = constants["dt"]
+    nsub = args.nsub
+    eps_out = args.eps_out
+
+    c1 = param_etch["c1"]
+    c2 = param_etch["c2"]
+    w1 = param_etch["w1"]
+    w2 = param_etch["w2"]
+    gamma1 = param_etch["gamma1"]
+    gamma2 = param_etch["gamma2"]
 
     # gax
     for x in range(
@@ -1225,9 +1247,27 @@ def create_sphere_eps(sphere, nsub, ddx, dt, eps_in, eps_out, ga):
     return ga
 
 
-def create_sphere_drude_eps(
-    sphere, nsub, ddx, dt, eps_in, eps_out, wp, gamma, ga, d1, d2, d3
-):
+def create_sphere_drude_eps(constants, args, sphere, ga, d1, d2, d3):
+
+    ddx = constants["ddx"]
+    dt = constants["dt"]
+    nsub = args.nsub
+    eps_out = args.eps_out
+
+    if args.material == "Drude":
+        eps_in = param_drude["eps_in"]
+        wp = param_drude["wp"]
+        gamma = param_drude["gamma"]
+
+    elif args.material == "DrudeLorentz":
+        eps_in = param_drudelorentz["eps_in"]
+        wp = param_drudelorentz["wp"]
+        gamma = param_drudelorentz["gamma"]
+
+    elif args.material == "Etchegoin":
+        eps_in = param_etch["eps_in"]
+        wp = param_etch["wp"]
+        gamma = param_etch["gamma"]
 
     # gax
     for x in range(
@@ -1470,9 +1510,16 @@ def create_sphere_drude_eps(
     return ga, d1, d2, d3
 
 
-def create_sphere_lorentz(
-    sphere, nsub, ddx, dt, eps_in, eps_out, wl, gamma_l, delta_eps, ga, l1, l2, l3
-):
+def create_sphere_lorentz(constants, args, sphere, ga, l1, l2, l3):
+    ddx = constants["ddx"]
+    dt = constants["dt"]
+    nsub = args.nsub
+    eps_out = args.eps_out
+
+    eps_in = param_drudelorentz["eps_in"]
+    wl = param_drudelorentz["wl"]
+    gamma_l = param_drudelorentz["gamma_l"]
+    delta_eps = param_drudelorentz["delta_eps"]
 
     # gax
     for x in range(

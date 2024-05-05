@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 from numba.experimental import jitclass
-from parameters import *
+from modules.fundamentals import eC, h_planck, tera, c, nm, hbar
 
 
 # the @numba.jitclass decorator allows us to pass our custom
@@ -164,15 +164,15 @@ class Pulse:
 
 
 class DFT:
-    def __init__(self, dt, iwdim, pulse_spread, emin, emax):
+    def __init__(self, dt, iwdim, pulse_spread, e_min, e_max):
         self.iwdim = iwdim
         self.tstart = int(1.8 * pulse_spread)
         self.omega = np.zeros([iwdim + 1], float)
         self.lam = np.zeros([iwdim + 1], float)
         self.energy = np.zeros([iwdim + 1], float)
         self.nu = np.zeros([iwdim + 1], float)
-        self.emin = emin
-        self.emax = emax
+        self.emin = e_min
+        self.emax = e_max
         self.energy = np.linspace(e_min, e_max, iwdim + 1)
         for ifreq in range(iwdim + 1):
             self.omega[ifreq] = (
