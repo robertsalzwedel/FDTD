@@ -32,7 +32,9 @@ def main():
     constants = Constants(ddx, dt, tsteps)
 
     npml = args.npml
-    tfsf_dist = npml + 4  # TFSF distance from computational boundary
+    tfsf_dist = (
+        npml + 4
+    )  # TFSF distance from computational boundary, number 4 is chosen arbitrarily
 
     radius = args.radius * nm  # radius of sphere
     eps_out = args.eps_out
