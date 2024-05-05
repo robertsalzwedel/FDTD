@@ -1,10 +1,22 @@
-from modules.fundamentals import Dimensions
-import numpy as np
-from modules.classes import Field
+from collections import namedtuple
+from argparse import ArgumentParser
 
-dim = 3
-dims = Dimensions(x=dim, y=dim, z=dim)
-a = Field(dims, 1)
-b = Field(dims, 2)
 
-print(a)
+parser = ArgumentParser()
+parser.add_argument(
+    "--pulse",
+    "-p",
+    help="Choice: [THz, Optical]",
+    choices=["THz", "Optical"],
+    default="Optical",
+)
+args = parser.parse_args()
+print(args.pulse)
+
+
+def to_namedtuple(classname="argparse_to_namedtuple", **kwargs):
+    return namedtuple(classname, tuple(kwargs))(**kwargs)
+
+
+nt = to_namedtuple(**vars(args))
+print(nt.pulse)

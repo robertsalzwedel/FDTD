@@ -223,14 +223,14 @@ def create_rectangle_drude_PBC(constants, args, dims, y_low, y_high, ga, d1, d2,
     eps_out = args.eps_out
 
     if args.material == "Drude":
-        eps_in = param_drude["eps_in"]
-        wp = param_drude["wp"]
-        gamma = param_drude["gamma"]
+        eps_in = param_drude.eps_in
+        wp = param_drude.wp
+        gamma = param_drude.gamma
 
-    if args.material == "DrudeLorentz":
-        eps_in = param_drudelorentz["eps_in"]
-        wp = param_drudelorentz["wp"]
-        gamma = param_drudelorentz["gamma"]
+    # if args.material == "DrudeLorentz":
+    #     eps_in = param_drudelorentz["eps_in"]
+    #     wp = param_drudelorentz["wp"]
+    #     gamma = param_drudelorentz["gamma"]
 
     for jj in range(y_low, y_high):
         for ii in range(0, dims.x):
@@ -1255,9 +1255,9 @@ def create_sphere_drude_eps(constants, args, sphere, ga, d1, d2, d3):
     eps_out = args.eps_out
 
     if args.material == "Drude":
-        eps_in = param_drude["eps_in"]
-        wp = param_drude["wp"]
-        gamma = param_drude["gamma"]
+        eps_in = param_drude.eps_in
+        wp = param_drude.wp
+        gamma = param_drude.gamma
 
     elif args.material == "DrudeLorentz":
         eps_in = param_drudelorentz["eps_in"]

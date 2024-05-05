@@ -10,9 +10,14 @@ import modules.pml as pml
 import modules.object as object
 
 
+def to_namedtuple(classname="argparse_to_namedtuple", **kwargs):
+    return namedtuple(classname, tuple(kwargs))(**kwargs)
+
+
 def main():
 
-    args = get_user_input()
+    arguments = get_user_input()
+    args = to_namedtuple(**vars(arguments))
 
     # constant parameters
     ddx = args.ddx * nm

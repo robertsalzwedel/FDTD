@@ -7,7 +7,7 @@ import argparse
 import warnings
 
 import grid
-import parameters as par
+import modules.parameters as par
 
 warnings.filterwarnings('ignore')
 

@@ -75,11 +75,16 @@ FLAGS = namedtuple(
 
 # Gold parameters
 param_free = {"eps_in": 1.0}
-param_drude = {
-    "eps_in": 9.0,  # background permittivity eps_inf   # Vial paper: 9.0685
-    "wp": 1.26e16,  # gold plasma frequency             # Vial paper: 1.35e16
-    "gamma": 1.4e14,  # gold damping                      # Vial paper: 1.15e14}
-}
+
+Parameters_Drude = namedtuple("Drude", ("eps_in", "wp", "gamma"))
+
+param_drude = Parameters_Drude(9.0, 1.26e16, 1.4e14)
+
+# param_drude = {
+#     "eps_in": 9.0,  # background permittivity eps_inf   # Vial paper: 9.0685
+#     "wp": 1.26e16,  # gold plasma frequency             # Vial paper: 1.35e16
+#     "gamma": 1.4e14,  # gold damping                      # Vial paper: 1.15e14}
+# }
 
 # DrudeLorentz model from Vial
 

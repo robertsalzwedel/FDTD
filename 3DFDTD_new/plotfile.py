@@ -1,7 +1,7 @@
 import numpy as np
-from fundamentals import *
+from modules.fundamentals import *
 import matplotlib.pyplot as plt
-from parameters import *
+from modules.parameters import *
 #import grid
 
 def setup(FLAG, fig, ax, ddx, dt, length, array, dims, sphere, pulse, npml, tfsf,e, ez_inc, hx_inc):
