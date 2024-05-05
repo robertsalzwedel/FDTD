@@ -1,0 +1,6 @@
+#!/bin/bash
+
+qsub -mem 48 -speed 6 job_script.txt
+
+qstat 
+ 

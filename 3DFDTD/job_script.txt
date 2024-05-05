@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source /usr/local/python3/bin/activate
+
+python 3dcode.py
