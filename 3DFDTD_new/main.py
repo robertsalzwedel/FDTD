@@ -14,8 +14,13 @@ def to_namedtuple(classname="argparse_to_namedtuple", **kwargs):
     return namedtuple(classname, tuple(kwargs))(**kwargs)
 
 
-def main():
-
+def main(num1,num2):
+    """ Main function to call a certain pattern
+        :param int num1: The first number
+        :param int num2: The second number
+        :returns: The sum of two numbers
+        :rtype: int
+    """
     arguments = get_user_input()
     args = to_namedtuple(**vars(arguments))
 

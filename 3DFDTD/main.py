@@ -10,6 +10,12 @@ import modules.object as object
 
 
 def main():
+    """ Main function to call a certain pattern
+    :param int num1: The first number
+    :param int num2: The second number
+    :returns: The sum of two numbers
+    :rtype: int
+    """
 
     args = get_user_input()
 
