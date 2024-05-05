@@ -217,8 +217,8 @@ def update_polarization_point(i, j, k, p, p_tmp, e, f1, f2, f3):
 @numba.jit(nopython=True)
 def create_rectangle_drude_PBC(constants, args, dims, y_low, y_high, ga, d1, d2, d3):
 
-    ddx = constants["ddx"]
-    dt = constants["dt"]
+    ddx = constants.ddx
+    dt = constants.dt
     nsub = args.nsub
     eps_out = args.eps_out
 
@@ -623,8 +623,8 @@ def create_sphere_etch(
     f4_et2,
 ):
 
-    ddx = constants["ddx"]
-    dt = constants["dt"]
+    ddx = constants.ddx
+    dt = constants.dt
     nsub = args.nsub
     eps_out = args.eps_out
 
@@ -1249,8 +1249,8 @@ def create_sphere_eps(sphere, nsub, ddx, dt, eps_in, eps_out, ga):
 
 def create_sphere_drude_eps(constants, args, sphere, ga, d1, d2, d3):
 
-    ddx = constants["ddx"]
-    dt = constants["dt"]
+    ddx = constants.ddx
+    dt = constants.dt
     nsub = args.nsub
     eps_out = args.eps_out
 
@@ -1511,8 +1511,8 @@ def create_sphere_drude_eps(constants, args, sphere, ga, d1, d2, d3):
 
 
 def create_sphere_lorentz(constants, args, sphere, ga, l1, l2, l3):
-    ddx = constants["ddx"]
-    dt = constants["dt"]
+    ddx = constants.ddx
+    dt = constants.dt
     nsub = args.nsub
     eps_out = args.eps_out
 

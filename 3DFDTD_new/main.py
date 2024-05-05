@@ -1,4 +1,5 @@
 import numpy as np
+from collections import namedtuple
 
 from modules.user_input import get_user_input
 from modules.classes import Pulse, DFT, Field
@@ -19,7 +20,11 @@ def main():
     dims = Dimensions(x=args.dim, y=args.dim, z=args.dim)
     tsteps = args.tsteps
 
-    constants = {"ddx": ddx, "dt": dt, "tsteps": tsteps}
+    # Declaring namedtuple()
+    Constants = namedtuple("Constants", ["ddx", "dt", "tsteps"])
+
+    # Adding values
+    constants = Constants(ddx, dt, tsteps)
 
     npml = args.npml
     tfsf_dist = npml + 4  # TFSF distance from computational boundary
@@ -403,7 +408,7 @@ def setup_object(constants, args, dims, sphere):
     elif args.object == "Rectangle" and args.boundary == "PBC":
 
         y_low = int(dims.y / 2)
-        y_high = int(dims.y / 2 + sphere.R / constants["ddx"])
+        y_high = int(dims.y / 2 + sphere.R / constants.ddx)
 
         if args.material == "Drude":
 
@@ -413,7 +418,7 @@ def setup_object(constants, args, dims, sphere):
             d3 = Field(dims, 0)  # prefactor in auxilliary equation
 
             ga, d1, d2, d3 = object.create_rectangle_drude_PBC(
-                constants, args, dims, param_drude, y_low, y_high, ga, d1, d2, d3
+                constants, args, dims, y_low, y_high, ga, d1, d2, d3
             )  # should derive a different quantity for the diameter instead of using sphere radius
             return ga, d1, d2, d3
 
