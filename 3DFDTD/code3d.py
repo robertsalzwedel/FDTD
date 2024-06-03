@@ -24,17 +24,18 @@ import json
 import os  # for making directory
 
 # Robert imports
-from modules.fundamentals import *
-from input import *
-from modules.parameters import *
+from modules.fundamentals import nm, c, Sc, Dimensions, define_boxes_arrays
+from modules.user_input import get_user_input
 import modules.fdtd as fdtd
 import modules.pml as pml
 import modules.object as object
 import modules.monitors as mnt
+from modules.fields import *
+from modules.classes import define_pulse
 import data
 import plotfile as plots
 from modules.classes import DFT, Pulse, DFT_Field_3D, DFT_Field_2D, Field
-from modules.fields import *
+from modules.parameters import *
 
 # package for the comparison to the Mie solution case for spherical particle
 import miepython
@@ -46,27 +47,58 @@ import sys
 
 np.set_printoptions(threshold=sys.maxsize)
 
-# Parameter handling - could be introduced at some point
 
-# parser = ArgumentParser()
-# parser.add_argument('--v', type=int,nargs=5)
-# args = parser.parse_args()
+def to_namedtuple(classname="argparse_to_namedtuple", **kwargs):
+    return namedtuple(classname, tuple(kwargs))(**kwargs)
 
-# current parser arguments (subject to change within the optimization process)
-# FLAG.OBJECT = args.v[0]
-# FLAG.MATERIAL = args.v[1]
-# ddx = args.v[2]*nm
-# dim = args.v[3]
-# tsteps = args.v[4]
-# R = args.v[4]*nm
+
+def print_parameters(ddx, dt, tsteps, length):
+    print("dx =", int(ddx / nm), "nm")
+    print("dt =", np.round(dt * 1e18, 2), "as")
+    print("xlength =", int(length.x / nm), "nm")
+    print("Full Simulation time: ", dt * tsteps * 1e15, "fs")
 
 
 ####################################################
 # Beginning of Code
 ####################################################
 
+arguments = get_user_input()
+args = to_namedtuple(**vars(arguments))
+print(args)
+
+# constant parameters
+ddx = args.ddx * nm
+dt = ddx / c * Sc
+# dims = Dimensions(x=args.dim, y=args.dim, z=args.dim)
+tsteps = args.tsteps
+
+# Declaring namedtuple()
+Constants = namedtuple("Constants", ["ddx", "dt", "tsteps"])
+
+# Adding values
+constants = Constants(ddx, dt, tsteps)
+
+npml = args.npml
+tfsf_dist = (
+    npml + 4
+)  # TFSF distance from computational boundary, number 4 is chosen arbitrarily
+
+radius = args.radius * nm  # radius of sphere
+eps_out = args.eps_out
+
+tfsf, scat, abs, length, array, sphere, offset, diameter = define_boxes_arrays(
+    tfsf_dist, dims, ddx, radius
+)
+
+# setup
+eps_in = 1.0  # this has to be changed!!
+pulse = define_pulse(args, dt, ddx, eps_in)
+dft = DFT(dt=dt, iwdim=100, pulse_spread=pulse.spread, e_min=1.9, e_max=3.2)
+
+
 # prints all parameters to console
-print_parameters()
+print_parameters(ddx, dt, tsteps, length)
 
 # create pulse - choose optical/THz pulse
 pulse = Pulse(
@@ -76,24 +108,22 @@ pulse = Pulse(
 pulse.print_parameters()
 
 # set global DFT parameters (DFT = discrete Fourier transform or Running Fourier Transform)
-dft = DFT(dt=dt, iwdim=100, pulse_spread=pulse.spread, emin=1.9, emax=3.2)
+dft = DFT(dt=dt, iwdim=100, pulse_spread=pulse.spread, e_min=1.9, e_max=3.2)
 
 ####################################################
-# Monitors
+# Monitors     # for more speedy coding, one could only comment in the ones that one uses.
 ####################################################
-# comments: for more speedy coding, one could only comment in the ones that one uses.
 
 # DFT Source monitors for 1d buffer
-SourceReDFT = np.zeros([dft.iwdim + 1], float)
-SourceImDFT = np.zeros([dft.iwdim + 1], float)
+SourceDFT = np.zeros((2, dft.iwdim + 1), float)
 
 # 3D DFT arrays
-if FLAG.DFT3D == 1:
+if args.dft3d:
     e_dft = DFT_Field_3D(dims, 0, dft.iwdim + 1)
     h_dft = DFT_Field_3D(dims, 0, dft.iwdim + 1)
 
 # 2D DFT arrays
-if FLAG.DFT2D == 1:
+if args.dft2d:
     # Positions of 2d monitors
     x_DFT = int(dims.x / 2)
     y_DFT = int(dims.y / 2)
@@ -112,7 +142,6 @@ if FLAG.DFT2D == 1:
     h_dft_znormal = DFT_Field_2D(dims.x, dims.y, 0, dft.iwdim + 1)
 
 if FLAG.TFSF == 2:
-
     # spatial position equal to absorption box for simplicity
     y_ref = scat.y_min
     y_trans = abs.y_max
@@ -123,9 +152,9 @@ if FLAG.TFSF == 2:
 
 "Scattering and absorption arrays"
 # might reduce the size of the array as I only store the monitor and not the value in the adjacent region/PML
-if FLAG.CROSS == 1:
+if args.cross:
 
-    ## Scattering
+    ## Scattering # this did not work for numba dictionaries
     # e_scat = {
     #     "x_min": DFT_Field_2D(dims.y, dims.z, 0, dft.iwdim + 1),
     #     "x_max": DFT_Field_2D(dims.y, dims.z, 0, dft.iwdim + 1),
@@ -206,7 +235,7 @@ if FLAG.CROSS == 1:
 
 
 # FFT Monitors
-if FLAG.FFT == 1:
+if args.fft:
     # location of FFT monitors
     n_mon = 6
     loc_monitors = [
@@ -230,9 +259,7 @@ if FLAG.FFT == 1:
 # Setup
 # ------------------------------------------------------------------------
 
-PML = pml.calculate_pml_params(
-    dims, npml=8, TFSF_FLAG=FLAG.TFSF
-)  # set PML parameters/en/latest/10_basic_tests.html
+PML = pml.calculate_pml_params(dims, npml=args.npml, BOUNDARY_FLAG=args.boundary)
 
 ##########################################
 # Object creation depending on flags
@@ -240,13 +267,13 @@ PML = pml.calculate_pml_params(
 
 start_time = timeit.default_timer()
 
-if FLAG.OBJECT == 1:  # if circle
+if args.object == "Sphere":
 
-    if FLAG.MATERIAL == 1:  # Drude only
+    if args.material == "Drude":
         ga, d1, d2, d3 = object.create_sphere_drude_eps(
             sphere, nsub, ddx, dt, eps_in, eps_out, wp, gamma, ga, d1, d2, d3
         )
-    if FLAG.MATERIAL == 2:  # DrudeLorentz
+    if args.material == "DrudeLorentz":
         ga, d1, d2, d3 = object.create_sphere_drude_eps(
             sphere, nsub, ddx, dt, eps_in, eps_out, wp, gamma, ga, d1, d2, d3
         )
@@ -266,7 +293,7 @@ if FLAG.OBJECT == 1:  # if circle
             l3,
         )
 
-    if FLAG.MATERIAL == 3:  # Etchegoin
+    if args.material == "Etchegoin":
         ga, d1, d2, d3 = object.create_sphere_drude_eps(
             sphere, nsub, ddx, dt, eps_in, eps_out, wp, gamma, ga, d1, d2, d3
         )
@@ -293,9 +320,9 @@ if FLAG.OBJECT == 1:  # if circle
             )
         )
 
-elif FLAG.OBJECT == 2 and FLAG.TFSF == 2:
+elif args.object == "Rectangle" and args.boundary == "PBC":
 
-    if FLAG.MATERIAL == 1:  # Drude model
+    if args.material == "Drude":
         ga, d1, d2, d3 = object.create_rectangle_PBC(
             dims,
             int(dims.y / 2),
@@ -310,7 +337,7 @@ elif FLAG.OBJECT == 2 and FLAG.TFSF == 2:
             d3,
         )  # should derive a different quantity for the diameter instead of using sphere radius
 
-    if FLAG.MATERIAL == 2:  # DrudeLorentz
+    if args.material == "DrudeLorentz":
         ga, d1, d2, d3 = object.create_rectangle_PBC(
             dims,
             int(dims.y / 2),
@@ -339,7 +366,7 @@ elif FLAG.OBJECT == 2 and FLAG.TFSF == 2:
             l3,
         )
 
-    if FLAG.MATERIAL == 3:  # Etchegoin
+    if args.material == "Etchegoin":
         ga, d1, d2, d3 = object.create_rectangle_PBC(
             dims,
             int(dims.y / 2),
@@ -376,7 +403,12 @@ elif FLAG.OBJECT == 2 and FLAG.TFSF == 2:
             )
         )
 
-elif FLAG.OBJECT == 0:
+elif args.boundary == "PBC" and args.source != "TFSF":
+    raise ValueError(
+        "You are using periodic boundary conditions without the implementation of TFSF."
+    )
+
+elif args.object == 0:
     print("No object defined")
 
 else:
@@ -384,12 +416,11 @@ else:
 
 
 ###################
-# Plot definitions
+# Animation Setup
 ###################
 
-# f_plot = np.zeros((grid.n_kmax,grid.n_phimax,grid.n_thetamax))
 # #General setting
-if FLAG.ANIMATION == 1:
+if args.animate:
     # plt.rcParams.update({'font.size': 14})
     # # fig, ax = plt.subplots(3, 4, figsize=(20, 15))
     # # ims, imp, text_tstep, xcut, ycut, zcut, incident_e, incident_h =\
@@ -402,7 +433,7 @@ if FLAG.ANIMATION == 1:
     fig, ax = plt.subplots(3, 4, figsize=(20, 15))
 
     ims, imp, text_tstep, xcut, ycut, zcut, incident_e, incident_h = plots.setup(
-        FLAG,
+        args,
         fig,
         ax,
         ddx,
@@ -423,7 +454,6 @@ if FLAG.ANIMATION == 1:
 intermediate_time = timeit.default_timer()
 print("Time for setting up the problem", intermediate_time - start_time)
 
-
 ###################################
 # Start of time loop
 ###################################
@@ -438,29 +468,29 @@ for time_step in range(1, tsteps + 1):
     # -------------------------------------------------------------------
 
     # Compute macroscopic polarization using auxilliary equation"
-    if FLAG.OBJECT != 0 and FLAG.MICRO == 0:
-        if FLAG.MATERIAL == 1:  # Drude only
+    if args.object != "None":
+        if args.material == "Drude":
             p_drude, p_tmp_drude = object.calculate_polarization(
-                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, FLAG.OBJECT
+                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, args.object
             )
             p.x = p_drude.x
             p.y = p_drude.y
             p.z = p_drude.z
 
-        if FLAG.MATERIAL == 2:  # DrudeLorentz:
+        if args.material == "DrudeLorentz":
             p_drude, p_tmp_drude = object.calculate_polarization(
-                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, FLAG.OBJECT
+                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, args.object
             )
             p_lorentz, p_tmp_lorentz = object.calculate_polarization(
-                dims, sphere, ddx, p_lorentz, p_tmp_lorentz, e, l1, l2, l3, FLAG.OBJECT
+                dims, sphere, ddx, p_lorentz, p_tmp_lorentz, e, l1, l2, l3, args.object
             )
             p.x = p_drude.x + p_lorentz.x
             p.y = p_drude.y + p_lorentz.y
             p.z = p_drude.z + p_lorentz.z
 
-        if FLAG.MATERIAL == 3:  # Etchegoin
+        if args.material == "Etchegoin":  # Etchegoin
             p_drude, p_tmp_drude = object.calculate_polarization(
-                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, FLAG.OBJECT
+                dims, sphere, ddx, p_drude, p_tmp_drude, e, d1, d2, d3, args.object
             )
             p_et1, p_tmp_et1 = object.calculate_polarization_etch(
                 dims,
@@ -474,7 +504,7 @@ for time_step in range(1, tsteps + 1):
                 f2_et1,
                 f3_et1,
                 f4_et1,
-                FLAG.OBJECT,
+                args.object,
             )
             p_et2, p_tmp_et2 = object.calculate_polarization_etch(
                 dims,
@@ -488,7 +518,7 @@ for time_step in range(1, tsteps + 1):
                 f2_et2,
                 f3_et2,
                 f4_et2,
-                FLAG.OBJECT,
+                args.object,
             )
             p.x = p_drude.x + p_et1.x + p_et2.x
             p.y = p_drude.y + p_et1.y + p_et2.y
@@ -499,7 +529,7 @@ for time_step in range(1, tsteps + 1):
     # -------------------------------------------------------------------
 
     # update 1d electric field buffer
-    if FLAG.TFSF == 1 or FLAG.TFSF == 2:
+    if args.source == "TFSF" and args.boundary != "None":
         # Update incident electric field
         ez_inc = fdtd.calculate_ez_inc_field(dims.y, ez_inc, hx_inc)
 
@@ -510,15 +540,15 @@ for time_step in range(1, tsteps + 1):
         boundary_high.append(ez_inc[dims.y - 2])
 
     # field updates
-    d, id = fdtd.D_update(FLAG, dims, d, h, id, PML, tfsf, hx_inc)
+    d, id = fdtd.D_update(args, dims, d, h, id, PML, tfsf, hx_inc)
     e, e1 = fdtd.calculate_e_fields(dims, e, e1, d, ga, p)
-    h, ih = fdtd.H_update(FLAG, dims, h, ih, e, PML, tfsf, ez_inc)
+    h, ih = fdtd.H_update(args, dims, h, ih, e, PML, tfsf, ez_inc)
 
     # pulse updating
     pulse_tmp = pulse.update_value(time_step, dt)
 
     # Update 1d buffer for plane wave - magnetic field
-    if FLAG.TFSF == 1 or FLAG.TFSF == 2:
+    if args.source == "TFSF" and args.boundary != "None":
         hx_inc = fdtd.calculate_hx_inc_field(dims.y, hx_inc, ez_inc)
 
     # -------------------------------------------------------------------
@@ -526,12 +556,12 @@ for time_step in range(1, tsteps + 1):
     # -------------------------------------------------------------------
 
     # pulse monitor plane wave
-    if FLAG.TFSF == 1 or FLAG.TFSF == 2:
+    if args.source == "TFSF" and args.boundary != "None":
         pulse_t[time_step - 1] = pulse_tmp
         ez_inc[tfsf.y_min - 3] = pulse_tmp
 
     # pulse monitor point source
-    if FLAG.POINT == 1:
+    if args.source == "Point":
         e.z[source.x, source.y, source.z] += pulse_tmp
         pulsemon_t, ez_source_t = mnt.update_pulsemonitors(
             time_step,
@@ -545,7 +575,7 @@ for time_step in range(1, tsteps + 1):
         )
 
     # 1D FFT monitors
-    if FLAG.FFT == 1:
+    if args.fft:
         # Something is wrong here!!
         mnt.update_1Dmonitors(
             time_step,
@@ -561,18 +591,18 @@ for time_step in range(1, tsteps + 1):
         )
 
     # Source monitors for TFSF
-    SourceReDFT, SourceImDFT = mnt.DFT_incident_update(
-        dft.omega, SourceReDFT, SourceImDFT, pulse_tmp, dft.iwdim, time_step
+    SourceDFT = mnt.DFT_incident_update(
+        dft.omega, SourceDFT, pulse_tmp, dft.iwdim, time_step
     )
 
     # 3D DFT monitors
-    if FLAG.DFT3D == 1 and time_step > dft.tstart:
+    if args.dft3d == 1 and time_step > dft.tstart:
         e_dft, h_dft = mnt.DFT3D_update(
             e, h, e_dft, h_dft, dft.iwdim, dft.omega, time_step
         )
 
     # 2D DFT monitors
-    if FLAG.DFT2D == 1 and time_step > dft.tstart:
+    if args.dft2d == 1 and time_step > dft.tstart:
         e_dft_xnormal, e_dft_ynormal, e_dft_znormal,
         h_dft_xnormal, h_dft_ynormal, h_dft_znormal = mnt.DFT2D_update(
             e,
@@ -592,13 +622,13 @@ for time_step in range(1, tsteps + 1):
         )
 
     # Reflection and transmission for periodic boundary condition
-    if FLAG.TFSF == 2 and time_step > dft.tstart:
+    if args.boundary == "PBC" and time_step > dft.tstart:
         e_ref, e_trans = mnt.DFT_ref_trans(
             e_ref, e_trans, e, y_ref, y_trans, dft.iwdim, dft.omega, time_step
         )
 
     # Cross Sections
-    if FLAG.CROSS == 1 and time_step > dft.tstart:
+    if args.cross and time_step > dft.tstart:
 
         # Scattering
         (
@@ -670,29 +700,47 @@ for time_step in range(1, tsteps + 1):
             time_step,
         )
 
-    # # Animation
-    # if time_step % cycle == 0 and FLAG.ANIMATION == 1:
-    #     # plots.animate(time_step,text_tstep,e,dims,ims,array,ax,xcut,ycut,zcut,incident_e,ez_inc,hx_inc,incident_h,p,imp,time_pause)
-    #     plots.animate_GIF(
-    #         time_step,
-    #         text_tstep,
-    #         e,
-    #         dims,
-    #         ims,
-    #         array,
-    #         ax,
-    #         ez_inc,
-    #         hx_inc,
-    #         incident_loc,
-    #         pulse,
-    #         p,
-    #         imp,
-    #         time_pause,
-    #         f_plot,
-    #         plot_f,
-    #         plot_f2,
-    #         plot_f3,
-    #     )
+    # Animation
+    if time_step % cycle == 0 and args.animate:
+        plots.animate(
+            time_step,
+            text_tstep,
+            e,
+            dims,
+            ims,
+            array,
+            ax,
+            xcut,
+            ycut,
+            zcut,
+            incident_e,
+            ez_inc,
+            hx_inc,
+            incident_h,
+            p,
+            imp,
+            time_pause,
+        )
+        # plots.animate_GIF(
+        #     time_step,
+        #     text_tstep,
+        #     e,
+        #     dims,
+        #     ims,
+        #     array,
+        #     ax,
+        #     ez_inc,
+        #     hx_inc,
+        #     incident_loc,
+        #     pulse,
+        #     p,
+        #     imp,
+        #     time_pause,
+        #     f_plot,
+        #     plot_f,
+        #     plot_f2,
+        #     plot_f3,
+        # )
 
 # computation time
 stop = timeit.default_timer()
@@ -706,7 +754,7 @@ plt.show()
 # -------------------------------------------------------------------
 
 "FT 1Dpoint monitors"
-if FLAG.FFT == 1:
+if args.fft:
     fft_res = 20
     omega, ex_mon_om, ey_mon_om, ez_mon_om, hx_mon_om, hy_mon_om, hz_mon_om = (
         mnt.fft_1Dmonitors(
@@ -715,7 +763,7 @@ if FLAG.FFT == 1:
     )
 
 # FFT for Point monitor
-if FLAG.POINT == 1:
+if args.source == "Point":
     fft_res = 20
     omega_source, pulsemon_om, ez_source_om = mnt.fft_sourcemonitors(
         dt, tsteps, fft_res, pulsemon_t, ez_source_t
@@ -728,28 +776,28 @@ if FLAG.POINT == 1:
     print("POINT FFT running")
 
 # calculate bandwidth
-if FLAG.TFSF == 1 or FLAG.TFSF == 2:
+if args.source == "TFSF" and args.boundary != "None":
     fft_res = 20
     omega_source, pulse_om = mnt.fft_source(dt, tsteps, fft_res, pulse_t)
     Source = np.abs(pulse_om) ** 2 / np.max(np.abs(pulse_om) ** 2)
     print("Bandwidth calculated")
 
 # calculate transmission and reflection
-if FLAG.TFSF == 2:
+if args.boundary == "PBC":
     reflection = e_ref.surface_magnitude()
     transmission = e_trans.surface_magnitude()
     plt.plot(
         dft.omega / dt * hbar / eC,
-        reflection**2 / (SourceReDFT**2 + SourceImDFT**2) / dims.x**4,
+        reflection**2 / (SourceDFT[0, :] ** 2 + SourceDFT[1, :] ** 2) / dims.x**4,
     )
     plt.plot(
         dft.omega / dt * hbar / eC,
-        transmission**2 / (SourceReDFT**2 + SourceImDFT**2) / dims.x**4,
+        transmission**2 / (SourceDFT[0, :] ** 2 + SourceDFT[1, :] ** 2) / dims.x**4,
     )
     plt.show()
 
 # calculate Cross Sections via Poynting vector
-if FLAG.CROSS == 1:
+if args.cross:
     S_scat_DFT = mnt.update_scat_DFT(
         S_scat_DFT,
         dft.iwdim,
@@ -808,7 +856,7 @@ if FLAG.CROSS == 1:
 # Data storage
 # -------------------------------------------------------------------
 
-if FLAG.POINT == 1:
+if args.source == "Point":
     data.store_point(
         FLAG,
         sphere,
@@ -828,7 +876,7 @@ if FLAG.POINT == 1:
         stop,
     )
 
-if FLAG.CROSS == 1:
+if args.cross:
     data.store_cross(
         FLAG,
         sphere,
@@ -845,14 +893,14 @@ if FLAG.CROSS == 1:
         stop,
         S_scat_total,
         S_abs_total,
-        SourceReDFT,
-        SourceImDFT,
+        SourceDFT[0, :],
+        SourceDFT[1, :],
         wp,
         gamma,
         tfsf_dist,
     )
 
-if FLAG.TFSF == 2 and FLAG.MICRO == 0:
+if args.boundary == "PBC":
     data.store_periodic(
         FLAG,
         sphere,
@@ -867,8 +915,8 @@ if FLAG.TFSF == 2 and FLAG.MICRO == 0:
         eps_out,
         start_time,
         stop,
-        SourceReDFT,
-        SourceImDFT,
+        SourceDFT[0, :],
+        SourceDFT[1, :],
         wp,
         gamma,
         tfsf_dist,
@@ -876,24 +924,24 @@ if FLAG.TFSF == 2 and FLAG.MICRO == 0:
         reflection,
     )
 
-if FLAG.TFSF == 2 and FLAG.MICRO == 1:
-    data.store_periodic_micro(
-        FLAG,
-        sphere,
-        ddx,
-        dt,
-        tsteps,
-        dims,
-        pulse,
-        dft,
-        npml,
-        eps_in,
-        eps_out,
-        start_time,
-        stop,
-        SourceReDFT,
-        SourceImDFT,
-        tfsf_dist,
-        transmission,
-        reflection,
-    )
+# if FLAG.TFSF == 2:
+#     data.store_periodic_micro(
+#         FLAG,
+#         sphere,
+#         ddx,
+#         dt,
+#         tsteps,
+#         dims,
+#         pulse,
+#         dft,
+#         npml,
+#         eps_in,
+#         eps_out,
+#         start_time,
+#         stop,
+#         SourceDFT[0, :],
+#         SourceDFT[1, :],
+#         tfsf_dist,
+#         transmission,
+#         reflection,
+#     )

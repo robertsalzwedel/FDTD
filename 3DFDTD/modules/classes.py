@@ -163,6 +163,17 @@ class Pulse:
         )
 
 
+def define_pulse(args, dt, ddx, eps_in):
+    if args.pulse == "Optical":
+        return Pulse(width=2, delay=5, energy=2.3, dt=dt, ddx=ddx, eps_in=eps_in)
+    elif args.pulse == "THz":
+        return Pulse(
+            width=1.5 * 1e3, delay=1, energy=4 * 1e-3, dt=dt, ddx=ddx, eps_in=eps_in
+        )
+    else:
+        raise ValueError("You have chosen a field that is not implemented.")
+
+
 class DFT:
     def __init__(self, dt, iwdim, pulse_spread, e_min, e_max):
         self.iwdim = iwdim

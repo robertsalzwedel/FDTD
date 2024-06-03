@@ -8,18 +8,26 @@ import modules.fdtd as fdtd
 from modules.classes import DFT_Field_3D, DFT_Field_2D
 import modules.pml as pml
 import modules.object as object
+import plotfile as plots
 
 
 def to_namedtuple(classname="argparse_to_namedtuple", **kwargs):
     return namedtuple(classname, tuple(kwargs))(**kwargs)
 
 
-def main(num1,num2):
-    """ Main function to call a certain pattern
-        :param int num1: The first number
-        :param int num2: The second number
-        :returns: The sum of two numbers
-        :rtype: int
+def print_parameters(ddx, dt, tsteps, length):
+    print("dx =", int(ddx / nm), "nm")
+    print("dt =", np.round(dt * 1e18, 2), "as")
+    print("xlength =", int(length.x / nm), "nm")
+    print("Full Simulation time: ", dt * tsteps * 1e15, "fs")
+
+
+def main():
+    """Main function to call a certain pattern
+    :param int num1: The first number
+    :param int num2: The second number
+    :returns: The sum of two numbers
+    :rtype: int
     """
     arguments = get_user_input()
     args = to_namedtuple(**vars(arguments))
@@ -53,14 +61,19 @@ def main(num1,num2):
     pulse = define_pulse(args, dt, ddx, eps_in)
     dft = DFT(dt=dt, iwdim=100, pulse_spread=pulse.spread, e_min=1.9, e_max=3.2)
 
+    # prints all parameters to console
+    print_parameters(ddx, dt, tsteps, length)
+    pulse.print_parameters()
+
     ####################################################
     # Monitors
     ####################################################
     # comments: for more speedy coding, one could only comment in the ones that one uses.
 
     # DFT Source monitors for 1d buffer
-    SourceReDFT = np.zeros([dft.iwdim + 1], float)
-    SourceImDFT = np.zeros([dft.iwdim + 1], float)
+    SourceDFT = np.zeros((2, dft.iwdim + 1), float)
+    # SourceReDFT = np.zeros([dft.iwdim + 1], float)
+    # SourceImDFT = np.zeros([dft.iwdim + 1], float)
 
     # 3D DFT arrays
     if args.dft3d:
@@ -273,8 +286,26 @@ def main(num1,num2):
     #     update pulse
     #     update monitors
     #     animate()
-    # if time_step % cycle == 0 and FLAG.ANIMATION == 1:
-    #     # plots.animate(time_step,text_tstep,e,dims,ims,array,ax,xcut,ycut,zcut,incident_e,ez_inc,hx_inc,incident_h,p,imp,time_pause)
+    if time_step % args.framerate == 10 and args.animate == 1:
+        plots.animate(
+            time_step,
+            text_tstep,
+            e,
+            dims,
+            ims,
+            array,
+            ax,
+            xcut,
+            ycut,
+            zcut,
+            incident_e,
+            ez_inc,
+            hx_inc,
+            incident_h,
+            p,
+            imp,
+            time_pause,
+        )
     #     plots.animate_GIF(
     #         time_step,
     #         text_tstep,
@@ -297,6 +328,7 @@ def main(num1,num2):
     #     )
 
     # process_data()
+
     print(args.pulse)
 
 
@@ -332,6 +364,9 @@ def setup_polarization():
 
 
 def setup_object(constants, args, dims, sphere):
+
+    dt = constants.dt
+    ddx = constants.ddx
 
     if args.object == "Sphere":
 

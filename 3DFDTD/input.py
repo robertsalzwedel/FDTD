@@ -9,7 +9,7 @@ dt = ddx / c * Sc  # time step, from dx fulfilling stability criteria
 radius = 150 * nm  # radius of sphere
 tfsf_dist = 12  # args.v[4]           # TFSF distance from computational boundary
 npml = 8  # number of PML layers
-dim = 50  # args.v[1]                 # number of spatial steps
+dim = 60  # args.v[1]                 # number of spatial steps
 
 "Time parameters"
 tsteps = 5000  # args.v[2]             # number of time steps

@@ -8,7 +8,7 @@ from modules.parameters import *
 
 
 def store_point(
-    FLAG,
+    args,
     sphere,
     ddx,
     dt,
@@ -27,7 +27,7 @@ def store_point(
 ):
 
     filename = "point_object{}_r{}_dx{}_T{}_X{}_lam{}_wdt{}_nfreq{}_xs{}_ys{}_zs{}_npml{}_eps{}_final_new".format(
-        FLAG.OBJECT,
+        args.object,
         int(sphere.R / nm),
         int(ddx / nm),
         tsteps,
@@ -51,7 +51,7 @@ def store_point(
     pointmonitors.to_pickle("Results/" + filename + ".pkl")
 
     custom_meta_content = {
-        "object": FLAG.OBJECT,
+        "object": args.object,
         "sphere": [sphere.R, sphere.x, sphere.y, sphere.z],
         "dx": ddx,
         "dt": dt,
@@ -81,7 +81,7 @@ def store_point(
 
 
 def store_cross(
-    FLAG,
+    args,
     sphere,
     ddx,
     dt,
@@ -105,7 +105,7 @@ def store_cross(
 
     filename = (
         "TFSF_object{}_r{}_dx{}_T{}_X{}_lam{}_wdt{}_nfreq{}_npml{}_eps{}_tfsf{}".format(
-            FLAG.OBJECT,
+            args.object,
             int(sphere.R / nm),
             int(ddx / nm),
             tsteps,
@@ -133,7 +133,7 @@ def store_cross(
     # crosssections.to_pickle('Results/'+filename+'.pkl')
 
     custom_meta_content = {
-        "object": FLAG.OBJECT,
+        "object": args.object,
         "sphere": [sphere.R, sphere.x, sphere.y, sphere.z],
         "dx": ddx,
         "dt": dt,
@@ -165,7 +165,7 @@ def store_cross(
 
 
 def store_periodic(
-    FLAG,
+    args,
     sphere,
     ddx,
     dt,
@@ -188,8 +188,8 @@ def store_periodic(
 ):
 
     filename = "periodic_object{}_material{}_r{}_dx{}_T{}_X{}_lam{}_wdt{}_nfreq{}_npml{}_tfsf{}".format(
-        FLAG.OBJECT,
-        FLAG.MATERIAL,
+        args.object,
+        args.material,
         int(sphere.R / nm),
         int(ddx / nm),
         tsteps,
@@ -214,7 +214,7 @@ def store_periodic(
     # periodic.to_pickle('Results/'+filename+'.pkl')
 
     custom_meta_content = {
-        "object": FLAG.OBJECT,
+        "object": args.object,
         "sphere": [sphere.R, sphere.x, sphere.y, sphere.z],
         "dx": ddx,
         "dt": dt,
@@ -246,7 +246,7 @@ def store_periodic(
 
 
 def store_periodic_micro(
-    FLAG,
+    args,
     sphere,
     ddx,
     dt,
@@ -267,8 +267,8 @@ def store_periodic_micro(
 ):
 
     filename = "periodic_micro_object{}_material{}_r{}_dx{}_T{}_X{}_lam{}_wdt{}_nfreq{}_npml{}_tfsf{}".format(
-        FLAG.OBJECT,
-        FLAG.MATERIAL,
+        args.object,
+        args.object,
         int(sphere.R / nm),
         int(ddx / nm),
         tsteps,
@@ -293,7 +293,7 @@ def store_periodic_micro(
     # periodic.to_pickle('Results/'+filename+'.pkl')
 
     custom_meta_content = {
-        "object": FLAG.OBJECT,
+        "object": args.object,
         "sphere": [sphere.R, sphere.x, sphere.y, sphere.z],
         "dx": ddx,
         "dt": dt,
